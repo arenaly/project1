@@ -85,7 +85,7 @@ app.post('/api/ai/chat', async (req, res) => {
     });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY || process.env.GROQ_API_KEY;
   const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
   const baseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
 
@@ -145,6 +145,23 @@ app.post('/api/ai/chat', async (req, res) => {
       detail: error?.message || 'unknown_error',
     });
   }
+});
+
+app.get('/api/ai/config-check', (_req, res) => {
+  const openAiKey = process.env.OPENAI_API_KEY || '';
+  const groqKey = process.env.GROQ_API_KEY || '';
+
+  res.json({
+    ok: true,
+    ai: {
+      hasOpenAiKey: Boolean(openAiKey),
+      hasGroqKey: Boolean(groqKey),
+      using: openAiKey ? 'OPENAI_API_KEY' : groqKey ? 'GROQ_API_KEY' : null,
+      baseUrl: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      keyLength: (openAiKey || groqKey).length,
+    },
+  });
 });
 
 app.get('/', (_req, res) => {
