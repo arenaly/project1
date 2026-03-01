@@ -40,6 +40,15 @@ const initialMessages = [
   },
 ];
 
+const initialRelaySteps = [
+  { key: 'pm', label: 'PM Agent', role: '요구사항 분해', status: 'idle' },
+  { key: 'researcher', label: 'Researcher', role: '근거/데이터 수집', status: 'idle' },
+  { key: 'writer', label: 'Copywriter', role: '초안 생성', status: 'idle' },
+  { key: 'reviewer', label: 'Reviewer', role: '검수/승인요청', status: 'idle' },
+];
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 function App() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
@@ -48,12 +57,87 @@ function App() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [activeTeam, setActiveTeam] = useState(presetTeams[0].name);
+  const [relaySteps, setRelaySteps] = useState(initialRelaySteps);
 
   const connectionLabel = loading
     ? '백엔드 확인 중'
     : error
       ? '연결 실패'
       : '연결 정상';
+
+  const runTasks = relaySteps.map((step, idx) => ({
+    id: idx + 1,
+    title: step.role,
+    assignee: step.label,
+    status:
+      step.status === 'done'
+        ? 'done'
+        : step.status === 'running'
+          ? 'running'
+          : step.status === 'waiting'
+            ? 'queued'
+            : 'blocked',
+  }));
+
+  const updateRelayStatus = (targetKey, status) => {
+    setRelaySteps((prev) =>
+      prev.map((step) =>
+        step.key === targetKey
+          ? { ...step, status }
+          : status === 'running' && step.status === 'running'
+            ? { ...step, status: 'done' }
+            : step
+      )
+    );
+  };
+
+  const resetRelay = () => {
+    setRelaySteps((prev) =>
+      prev.map((step, index) => ({
+        ...step,
+        status: index === 0 ? 'running' : 'waiting',
+      }))
+    );
+  };
+
+  const simulateRelay = async (seedText, aiAnswer) => {
+    updateRelayStatus('pm', 'done');
+    await sleep(320);
+    updateRelayStatus('researcher', 'running');
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now() + 2,
+        author: 'Researcher',
+        text: `요청("${seedText.slice(0, 26)}...") 관련 근거를 수집해 PM에게 전달했습니다.`,
+      },
+    ]);
+
+    await sleep(360);
+    updateRelayStatus('writer', 'running');
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now() + 3,
+        author: 'Copywriter',
+        text: '리서치 결과를 바탕으로 초안 1차 버전을 작성했습니다.',
+      },
+    ]);
+
+    await sleep(360);
+    updateRelayStatus('reviewer', 'running');
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now() + 4,
+        author: 'Reviewer',
+        text: `품질 체크 완료. 최종 제안: ${aiAnswer.slice(0, 80)}...`,
+      },
+    ]);
+
+    await sleep(260);
+    setRelaySteps((prev) => prev.map((step) => ({ ...step, status: 'done' })));
+  };
 
   useEffect(() => {
     async function fetchHealth() {
@@ -105,6 +189,7 @@ function App() {
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    resetRelay();
 
     try {
       setSending(true);
@@ -143,6 +228,8 @@ function App() {
           text: json.answer || '(응답 없음)',
         },
       ]);
+
+      await simulateRelay(text, json.answer || '응답 없음');
     } catch (err) {
       setMessages((prev) => [
         ...prev,
@@ -152,6 +239,7 @@ function App() {
           text: `AI 연결 오류: ${err.message || 'unknown error'}`,
         },
       ]);
+      setRelaySteps((prev) => prev.map((step) => ({ ...step, status: 'idle' })));
     } finally {
       setSending(false);
     }
@@ -205,9 +293,23 @@ function App() {
         </header>
 
         <div className="quick-actions">
-          <button type="button">@Researcher 시장 리서치</button>
-          <button type="button">@Copywriter 카피 3안 생성</button>
-          <button type="button">@Reviewer 검수 체크</button>
+          <button type="button" onClick={() => setInput('@Researcher 시장 리서치')}>@Researcher 시장 리서치</button>
+          <button type="button" onClick={() => setInput('@Copywriter 카피 3안 생성')}>@Copywriter 카피 3안 생성</button>
+          <button type="button" onClick={() => setInput('@Reviewer 검수 체크')}>@Reviewer 검수 체크</button>
+        </div>
+
+        <div className="relay-board">
+          {relaySteps.map((step, idx) => (
+            <div key={step.key} className="relay-item">
+              <div className={`agent-dot ${step.status}`} />
+              <div>
+                <strong>{step.label}</strong>
+                <p>{step.role}</p>
+              </div>
+              <span className={`status-pill ${step.status}`}>{step.status}</span>
+              {idx < relaySteps.length - 1 && <span className="handoff">→</span>}
+            </div>
+          ))}
         </div>
 
         <div className="chat-box modern-chat">
@@ -254,7 +356,7 @@ function App() {
         </div>
 
         <ul className="list modern-list">
-          {initialTasks.map((task) => (
+          {runTasks.map((task) => (
             <li key={task.id}>
               <div className="row-between">
                 <div>{task.title}</div>
