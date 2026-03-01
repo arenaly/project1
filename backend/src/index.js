@@ -1,7 +1,10 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
-import { isSupabaseConfigured } from './lib/supabase.js';
+import {
+  isSupabaseConfigured,
+  checkSupabaseConnection,
+} from './lib/supabase.js';
 
 dotenv.config();
 
@@ -43,14 +46,32 @@ app.use(
 );
 app.use(express.json());
 
-app.get('/api/health', (_req, res) => {
+app.get('/api/health', async (_req, res) => {
+  const supabaseConnection = await checkSupabaseConnection();
+
   res.json({
     ok: true,
     service: 'backend',
     timestamp: new Date().toISOString(),
     supabase: {
       configured: isSupabaseConfigured,
+      connection: supabaseConnection,
     },
+  });
+});
+
+app.get('/api/supabase/check', async (_req, res) => {
+  const connection = await checkSupabaseConnection();
+
+  const statusCode = connection.ok
+    ? 200
+    : connection.reason === 'missing_env'
+      ? 400
+      : 502;
+
+  res.status(statusCode).json({
+    ok: connection.ok,
+    supabase: connection,
   });
 });
 
