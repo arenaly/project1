@@ -77,6 +77,14 @@
    - `VITE_API_BASE_URL` = Render 백엔드 URL (예: `https://project1-backend.onrender.com`)
 5. Deploy 실행
 
+### Vercel 빌드 명령 주의
+
+- 올바른 값: `npm run build`
+- 잘못된 예: `npm vite build`, `vite build`
+
+`Unknown command: "vite"` 또는 `Command "npm vite build" exited with 1` 오류가 뜨면,
+Vercel Project Settings에서 Build Command를 반드시 `npm run build`로 수정하세요.
+
 배포 후 프론트 URL 예시:
 
 `https://project1-frontend.vercel.app`
