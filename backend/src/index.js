@@ -7,11 +7,29 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 4000;
-const frontendOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+const originEnv =
+  process.env.FRONTEND_ORIGINS ||
+  process.env.FRONTEND_ORIGIN ||
+  'http://localhost:5173';
+
+const allowedOrigins = originEnv
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 app.use(
   cors({
-    origin: frontendOrigin,
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   })
 );
