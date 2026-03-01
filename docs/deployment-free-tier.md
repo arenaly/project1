@@ -54,6 +54,25 @@
    - `SUPABASE_ANON_KEY` = Supabase anon key
 5. Deploy 실행
 
+### Render 오류 트러블슈팅
+
+에러:
+
+```text
+error Couldn't find a package.json file in "/opt/render/project/src"
+```
+
+원인: Render가 저장소 루트(`/opt/render/project/src`)에서 실행 중인데,
+실제 `package.json`은 `backend/` 안에 있기 때문입니다.
+
+해결:
+- Render Service Settings에서 반드시 아래 값으로 수정
+  - Root Directory: `backend`
+  - Build Command: `npm install`
+  - Start Command: `npm start`
+
+참고: 저장소에 `render.yaml`도 추가해 두었습니다. (rootDir=backend 고정)
+
 배포 후 백엔드 URL 예시:
 
 `https://project1-backend.onrender.com`
