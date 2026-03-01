@@ -1,12 +1,45 @@
 import { useEffect, useState } from 'react';
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 const REQUEST_TIMEOUT_MS = 15000;
+
+const presetTeams = [
+  '마케팅 어벤져스 팀',
+  '신사업 리서치 팀',
+  '번역/로컬라이징 팀',
+];
+
+const initialTasks = [
+  { id: 1, title: '시장 리서치', assignee: 'Researcher', status: 'running' },
+  { id: 2, title: '카피 초안 작성', assignee: 'Copywriter', status: 'queued' },
+  { id: 3, title: '리뷰/승인', assignee: 'Reviewer', status: 'blocked' },
+];
+
+const initialMessages = [
+  {
+    id: 1,
+    author: 'PM Agent',
+    text: '글로벌 목표를 받았습니다. 작업을 분해해서 팀에 할당할게요.',
+  },
+  {
+    id: 2,
+    author: 'Researcher',
+    text: '최신 트렌드 5개 수집 중입니다. 10분 내 1차 보고 드릴게요.',
+  },
+];
 
 function App() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  const [messages, setMessages] = useState(initialMessages);
+  const [input, setInput] = useState('');
+
+  const connectionLabel = loading
+    ? '백엔드 확인 중'
+    : error
+      ? '연결 실패'
+      : '연결 정상';
 
   useEffect(() => {
     async function fetchHealth() {
@@ -22,6 +55,15 @@ function App() {
         if (!response.ok) {
           throw new Error(`요청 실패: ${response.status}`);
         }
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          const bodyText = await response.text();
+          const preview = bodyText.slice(0, 80).replace(/\s+/g, ' ');
+          throw new Error(
+            `JSON 응답이 아닙니다. VITE_API_BASE_URL 확인 필요 (현재: ${apiBaseUrl}) / 응답 미리보기: ${preview}`
+          );
+        }
+
         const json = await response.json();
         setData(json);
       } catch (err) {
@@ -41,24 +83,79 @@ function App() {
     fetchHealth();
   }, []);
 
+  const handleSend = () => {
+    const text = input.trim();
+    if (!text) return;
+
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now(), author: 'You', text },
+    ]);
+    setInput('');
+  };
+
   return (
-    <main className="container">
-      <h1>React + Express + Supabase Starter</h1>
-      <p>
-        API Base URL: <code>{apiBaseUrl}</code>
-      </p>
+    <main className="app-shell">
+      <aside className="panel left">
+        <h2>Preset Teams</h2>
+        <ul className="list">
+          {presetTeams.map((team) => (
+            <li key={team}>{team}</li>
+          ))}
+        </ul>
+      </aside>
 
-      {loading && <p>백엔드 상태 확인 중...</p>}
+      <section className="panel center">
+        <header className="topbar">
+          <div>
+            <h1>Super Individual Workspace</h1>
+            <p>
+              API: <code>{apiBaseUrl}</code>
+            </p>
+          </div>
+          <span className={`badge ${error ? 'bad' : 'good'}`}>{connectionLabel}</span>
+        </header>
 
-      {!loading && error && (
-        <div className="error">
-          <strong>연결 오류:</strong> {error}
+        <div className="chat-box">
+          {messages.map((msg) => (
+            <div className="msg" key={msg.id}>
+              <strong>{msg.author}</strong>
+              <p>{msg.text}</p>
+            </div>
+          ))}
         </div>
-      )}
 
-      {!loading && data && (
-        <pre>{JSON.stringify(data, null, 2)}</pre>
-      )}
+        <div className="chat-input">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="@Researcher 경쟁사 비교표 만들어줘"
+          />
+          <button onClick={handleSend}>전송</button>
+        </div>
+
+        {!loading && error && (
+          <div className="error">
+            <strong>연결 오류:</strong> {error}
+          </div>
+        )}
+      </section>
+
+      <aside className="panel right">
+        <h2>Run Status</h2>
+        <ul className="list">
+          {initialTasks.map((task) => (
+            <li key={task.id}>
+              <div>{task.title}</div>
+              <small>
+                {task.assignee} · {task.status}
+              </small>
+            </li>
+          ))}
+        </ul>
+
+        {!loading && data && <pre>{JSON.stringify(data, null, 2)}</pre>}
+      </aside>
     </main>
   );
 }
