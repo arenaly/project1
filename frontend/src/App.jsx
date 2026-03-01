@@ -107,6 +107,15 @@ function App() {
         }),
       });
 
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const bodyText = await response.text();
+        const preview = bodyText.slice(0, 120).replace(/\s+/g, ' ');
+        throw new Error(
+          `AI API가 JSON이 아닌 응답을 반환했습니다. API URL 확인 필요 (현재: ${apiBaseUrl}) / 미리보기: ${preview}`
+        );
+      }
+
       const json = await response.json();
 
       if (!response.ok || !json?.ok) {
