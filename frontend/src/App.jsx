@@ -4,9 +4,21 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 const REQUEST_TIMEOUT_MS = 15000;
 
 const presetTeams = [
-  '마케팅 어벤져스 팀',
-  '신사업 리서치 팀',
-  '번역/로컬라이징 팀',
+  {
+    name: '마케팅 어벤져스 팀',
+    description: '트렌드 분석 + 카피 + 검수 자동 루프',
+    badge: 'Popular',
+  },
+  {
+    name: '신사업 리서치 팀',
+    description: '시장/경쟁사 분석 + 임원 보고서 초안',
+    badge: 'Pro',
+  },
+  {
+    name: '번역/로컬라이징 팀',
+    description: '다국어 번역 + 톤앤매너 교정',
+    badge: 'New',
+  },
 ];
 
 const initialTasks = [
@@ -35,6 +47,7 @@ function App() {
   const [messages, setMessages] = useState(initialMessages);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [activeTeam, setActiveTeam] = useState(presetTeams[0].name);
 
   const connectionLabel = loading
     ? '백엔드 확인 중'
@@ -146,42 +159,85 @@ function App() {
 
   return (
     <main className="app-shell">
-      <aside className="panel left">
-        <h2>Preset Teams</h2>
-        <ul className="list">
+      <aside className="panel left glass">
+        <div className="section-head">
+          <h2>Preset Teams</h2>
+          <span className="muted">3개 템플릿</span>
+        </div>
+
+        <div className="team-stack">
           {presetTeams.map((team) => (
-            <li key={team}>{team}</li>
-          ))}
-        </ul>
-      </aside>
-
-      <section className="panel center">
-        <header className="topbar">
-          <div>
-            <h1>Super Individual Workspace</h1>
-            <p>
-              API: <code>{apiBaseUrl}</code>
-            </p>
-          </div>
-          <span className={`badge ${error ? 'bad' : 'good'}`}>{connectionLabel}</span>
-        </header>
-
-        <div className="chat-box">
-          {messages.map((msg) => (
-            <div className="msg" key={msg.id}>
-              <strong>{msg.author}</strong>
-              <p>{msg.text}</p>
-            </div>
+            <button
+              type="button"
+              key={team.name}
+              className={`team-card ${activeTeam === team.name ? 'active' : ''}`}
+              onClick={() => setActiveTeam(team.name)}
+            >
+              <div className="row-between">
+                <strong>{team.name}</strong>
+                <span className="tag">{team.badge}</span>
+              </div>
+              <p>{team.description}</p>
+            </button>
           ))}
         </div>
 
-        <div className="chat-input">
+        <div className="mini-stat">
+          <span>이번 주 자동화 절감 시간</span>
+          <strong>12.4h</strong>
+        </div>
+      </aside>
+
+      <section className="panel center glass">
+        <header className="topbar modern">
+          <div>
+            <h1>Super Individual Workspace</h1>
+            <p>
+              활성 팀: <b>{activeTeam}</b>
+            </p>
+          </div>
+          <div className="status-wrap">
+            <span className={`badge ${error ? 'bad' : 'good'}`}>{connectionLabel}</span>
+            <span className="muted tiny">
+              API <code>{apiBaseUrl}</code>
+            </span>
+          </div>
+        </header>
+
+        <div className="quick-actions">
+          <button type="button">@Researcher 시장 리서치</button>
+          <button type="button">@Copywriter 카피 3안 생성</button>
+          <button type="button">@Reviewer 검수 체크</button>
+        </div>
+
+        <div className="chat-box modern-chat">
+          {messages.map((msg) => (
+            <div className={`msg ${msg.author === 'You' ? 'mine' : ''}`} key={msg.id}>
+              <div className="msg-head">
+                <strong>{msg.author}</strong>
+              </div>
+              <p>{msg.text}</p>
+            </div>
+          ))}
+          {sending && (
+            <div className="msg">
+              <div className="msg-head">
+                <strong>PM Agent</strong>
+              </div>
+              <p>응답 생성 중...</p>
+            </div>
+          )}
+        </div>
+
+        <div className="chat-input sticky">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="@Researcher 경쟁사 비교표 만들어줘"
           />
-          <button onClick={handleSend}>전송</button>
+          <button onClick={handleSend} disabled={sending}>
+            {sending ? '전송 중...' : '전송'}
+          </button>
         </div>
 
         {!loading && error && (
@@ -191,15 +247,20 @@ function App() {
         )}
       </section>
 
-      <aside className="panel right">
-        <h2>Run Status</h2>
-        <ul className="list">
+      <aside className="panel right glass">
+        <div className="section-head">
+          <h2>Run Status</h2>
+          <span className="muted">Live</span>
+        </div>
+
+        <ul className="list modern-list">
           {initialTasks.map((task) => (
             <li key={task.id}>
-              <div>{task.title}</div>
-              <small>
-                {task.assignee} · {task.status}
-              </small>
+              <div className="row-between">
+                <div>{task.title}</div>
+                <span className={`chip ${task.status}`}>{task.status}</span>
+              </div>
+              <small>{task.assignee}</small>
             </li>
           ))}
         </ul>
