@@ -34,6 +34,7 @@ function App() {
   const [error, setError] = useState('');
   const [messages, setMessages] = useState(initialMessages);
   const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
 
   const connectionLabel = loading
     ? '백엔드 확인 중'
@@ -83,15 +84,55 @@ function App() {
     fetchHealth();
   }, []);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = input.trim();
-    if (!text) return;
+    if (!text || sending) return;
 
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now(), author: 'You', text },
-    ]);
+    const userMessage = { id: Date.now(), author: 'You', text };
+
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
+
+    try {
+      setSending(true);
+
+      const response = await fetch(`${apiBaseUrl}/api/ai/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          role: 'PM Agent',
+          message: text,
+        }),
+      });
+
+      const json = await response.json();
+
+      if (!response.ok || !json?.ok) {
+        throw new Error(json?.error || `AI 요청 실패: ${response.status}`);
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          author: 'PM Agent',
+          text: json.answer || '(응답 없음)',
+        },
+      ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          author: 'System',
+          text: `AI 연결 오류: ${err.message || 'unknown error'}`,
+        },
+      ]);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
