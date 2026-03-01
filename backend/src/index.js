@@ -17,6 +17,10 @@ const allowedOrigins = originEnv
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const allowVercelAppOrigins =
+  String(process.env.ALLOW_VERCEL_APP_ORIGINS || 'false').toLowerCase() ===
+  'true';
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -25,6 +29,10 @@ app.use(
       }
 
       if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      if (allowVercelAppOrigins && origin.endsWith('.vercel.app')) {
         return callback(null, true);
       }
 
