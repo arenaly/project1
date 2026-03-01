@@ -18,7 +18,7 @@ const allowedOrigins = originEnv
   .filter(Boolean);
 
 const allowVercelAppOrigins =
-  String(process.env.ALLOW_VERCEL_APP_ORIGINS || 'false').toLowerCase() ===
+  String(process.env.ALLOW_VERCEL_APP_ORIGINS ?? 'true').toLowerCase() ===
   'true';
 
 app.use(
