@@ -2,12 +2,20 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseKey = supabaseServiceRoleKey || supabaseAnonKey;
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey);
 
 export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseKey)
   : null;
+
+export const supabaseAuthMode = supabaseServiceRoleKey
+  ? 'service_role'
+  : supabaseAnonKey
+    ? 'anon'
+    : 'none';
 
 export async function checkSupabaseConnection() {
   if (!isSupabaseConfigured) {
@@ -22,8 +30,8 @@ export async function checkSupabaseConnection() {
     const response = await fetch(`${supabaseUrl}/rest/v1/`, {
       method: 'GET',
       headers: {
-        apikey: supabaseAnonKey,
-        Authorization: `Bearer ${supabaseAnonKey}`,
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
       },
     });
 
