@@ -61,3 +61,24 @@
 - 중요한 키는 정기적으로 rotate
 - 모니터링용 헬스체크 URL을 즐겨찾기에 등록
 - 장애 재발 방지를 위해 "원인 / 조치 / 재발방지"를 짧게 기록
+
+---
+
+## 6) Multiagent 운영 체크 (검토게이트 + 인계카드)
+
+- [ ] 인계카드 생성 규칙 확인
+  - [ ] 최소 필드(요약/근거/산출물/다음 담당자) 누락률 점검
+  - [ ] 상태 전이(`handoff → in_review → approved/rejected`) 무결성 확인
+- [ ] 검토게이트 SLA 확인
+  - [ ] 평균 승인 대기시간(MTTA) 점검
+  - [ ] 반려 사유(note) 기록률 점검
+- [ ] 재작업 라우팅 정상 동작
+  - [ ] 반려 시 이전 담당자로 재할당 이벤트 기록
+  - [ ] 승인 시 run 완료 또는 다음 단계 전환 확인
+- [ ] Trace/Event 타임라인 점검
+  - [ ] `approval.requested`, `approval.resolved`, `handoff.created`, `task.reassigned` 이벤트 누락 여부
+  - [ ] 최근 50개 이벤트 조회 API 정상 응답
+- [ ] 런타임 제어 점검
+  - [ ] `pause/resume/stop/retry/reassign` API 호출 결과와 run state 일치
+- [ ] 정책/가드레일 점검
+  - [ ] 루프/타임아웃/비용 초과 시 policy event 생성 여부
